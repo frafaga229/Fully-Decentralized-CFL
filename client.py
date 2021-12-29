@@ -1,39 +1,34 @@
+import torch
 
 class Client(object):
 
-    def __init__(
-            self,
-            id,
-            dataset,
-            model,
-    ):
+    def __init__(self, id, loader, model, criterion, device=None):
 
         self.id = id
-        self.dataset = dataset
+        self.loader = loader
         self.model = model
+        self.criterion = criterion
+        if device is None:
+            self.device = torch.device("cpu")
+        self.device = device
 
-    def local_step(self, single_batch_flag=False, *args, **kwargs):
+    def local_step(self, n_epochs):
         """
-        perform a local step on each node
-        single_batch_flag: if true, the client only uses one batch to perform the update
+        perform a local step
         """
-        self.counter += 1
-        self.update_sample_weights()
-        self.update_learners_weights()
+        for _ in range(n_epochs):
+            batch = next(iter(self.loader))
+            self.compute_gradients(batch)
+            x, y = batch
+            x, y = x.to(self.device), y.to(self.device)
 
-        if single_batch_flag:
-            batch = self.get_next_batch()
-            client_updates = \
-                self.learners_ensemble.fit_batch(
-                    batch=batch,
-                    weights=self.samples_weights
-                )
-        else:
-            client_updates = \
-                self.learners_ensemble.fit_epochs(
-                    iterator=self.train_iterator,
-                    n_epochs=self.local_steps,
-                    weights=self.samples_weights
-                )
+            self.model.zero_grad()
 
-        return client_updates
+            y_pred = self.model(x)
+
+            loss = self.criterion(y_pred, y)
+            loss.backward()
+
+        # how we push the gradients to other clients??
+
+
