@@ -89,6 +89,8 @@ class SyntheticDataGenerator:
 
             all_data[mode] = data_per_cluster
 
+        return all_data
+
     def save_metadata(self, json_path):
         """
 

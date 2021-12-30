@@ -10,14 +10,14 @@ BOX = (-1.0, 1.0)
 
 PATH = "all_data/"
 METADATA_PATH = "metadata.json"
-GRAPH_PATH = "graph.gml"
+GRAPH_PATH = "graph.json"
 
 
 def parse_args(args_list=None):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--n_clusters',
+        '--n_clients',
         help='number of tasks/clients;',
         required=True,
         type=int
@@ -38,7 +38,7 @@ def parse_args(args_list=None):
         '--graph_hetero_level',
         help='Heterogeneity level of the graph clustering; smaller value for clearer clustering',
         type=float,
-        default=0
+        default=0.
     )
     parser.add_argument(
         '--noise_level',
@@ -108,16 +108,19 @@ if __name__ == "__main__":
     data_generator.save_metadata(json_path=METADATA_PATH)
 
     clients_per_cluster = iid_divide(list(range(args.n_clients)), args.n_clusters)
-    n_clients_per_clusters = [len(l) for l in clients_per_cluster]
+    n_clients_per_cluster = [len(l) for l in clients_per_cluster]
 
     prob_matrix = np.ones((args.n_clusters, args.n_clusters)) - np.eye(args.n_clusters)
     prob_matrix *= (args.graph_hetero_level / (args.n_clusters - 1))
-    prob_matrix += np.diag((1-args.graph_hetero_level)*np.ones(args.n_clusters), dtype=np.float32)
+    prob_matrix += np.diag((1-args.graph_hetero_level)*np.ones(args.n_clusters))
 
-    graph = nx.stochastic_block_model(n_clients_per_clusters, prob_matrix, seed=args.seed)
+    # TODO
+    # print("\n==>Save graph..")
+    # graph = nx.stochastic_block_model(n_clients_per_clusters, prob_matrix, seed=args.seed)
+    # json_graph = nx.readwrite.json_graph.node_link_data(graph)
 
-    print("\n==>Save graph..")
-    nx.readwrite.gml.write_gml(graph, GRAPH_PATH)
+    # with open(GRAPH_PATH, "w") as f:
+    #    json.dump(json_graph, f)
 
     print("\n==>Save data..")
 
@@ -128,8 +131,8 @@ if __name__ == "__main__":
             cluster_data = all_data[mode][cluster_id]
 
             data_per_client = {
-                "x": split_list_by_indices(cluster_data["x"], clients_per_cluster[cluster_id]),
-                "y": split_list_by_indices(cluster_data["y"], clients_per_cluster[cluster_id])
+                "x": iid_divide(cluster_data["x"], n_clients_per_cluster[cluster_id]),
+                "y": iid_divide(cluster_data["y"], n_clients_per_cluster[cluster_id])
             }
 
             for idx, client_id in enumerate(clients_per_cluster[cluster_id]):
