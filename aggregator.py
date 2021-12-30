@@ -38,7 +38,7 @@ class Aggregator:
         #
         #     for key, param in global_learner.model.state_dict().items():
         #         shape_ = param.shape
-        #         models_params = torch.zeros(self.n_clients, int(np.prod(shape_)), device=self.device)
+        #         models_params = torch.zeros(self.n_clusters, int(np.prod(shape_)), device=self.device)
         #
         #         for ii, sd in enumerate(state_dicts):
         #             models_params[ii] = sd[key].view(1, -1)
