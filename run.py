@@ -20,7 +20,7 @@ def init_clients(args_, root_path, logs_root):
 
     print("===> Initializing clients..")
     clients_ = []
-    for task_id, (train_iterator, val_iterator, test_iterator) in \
+    for client_id, (train_iterator, val_iterator, test_iterator) in \
             enumerate(tqdm(zip(train_iterators, val_iterators, test_iterators), total=len(train_iterators))):
 
         if train_iterator is None or test_iterator is None:
@@ -41,12 +41,12 @@ def init_clients(args_, root_path, logs_root):
 
             )
 
-        logs_path = os.path.join(logs_root, "task_{}".format(task_id))
+        logs_path = os.path.join(logs_root, "client_{}".format(client_id))
         os.makedirs(logs_path, exist_ok=True)
         logger = SummaryWriter(logs_path)
 
         client = client(
-            learner=learner,
+            learners_emsemble=learner,
             train_iterator=train_iterator,
             val_iterator=val_iterator,
             test_iterator=test_iterator,
@@ -54,7 +54,6 @@ def init_clients(args_, root_path, logs_root):
             local_steps=args_.local_steps,
             tune_locally=args_.locally_tune_clients
         )
-
 
         clients_.append(client)
 
@@ -74,16 +73,16 @@ def run_experiment(args_):
     print("==> Clients initialization..")
     clients = init_clients(
         args_,
-        root_path=os.path.join(data_dir, "train"),
+        root_path=data_dir,
         logs_root=os.path.join(logs_root, "train")
     )
 
-    print("==> Test Clients initialization..")
-    test_clients = init_clients(
-        args_,
-        root_path=os.path.join(data_dir, "test"),
-        logs_root=os.path.join(logs_root, "test")
-    )
+    # print("==> Test Clients initialization..")
+    # test_clients = init_clients(
+    #     args_,
+    #     root_path=os.path.join(data_dir, "test"),
+    #     logs_root=os.path.join(logs_root, "test")
+    # )
 
     logs_path = os.path.join(logs_root, "train", "global")
     os.makedirs(logs_path, exist_ok=True)
@@ -93,31 +92,26 @@ def run_experiment(args_):
     os.makedirs(logs_path, exist_ok=True)
     global_test_logger = SummaryWriter(logs_path)
 
-    global_learners_ensemble = \
-        get_learners_ensemble(
-            n_learners=args_.n_learners,
+    global_learner = \
+        get_learner(
             name=args_.experiment,
             device=args_.device,
             optimizer_name=args_.optimizer,
             scheduler_name=args_.lr_scheduler,
             initial_lr=args_.lr,
-            input_dim=args_.input_dimension,
-            output_dim=args_.output_dimension,
+            mu=args_.mu,
             n_rounds=args_.n_rounds,
             seed=args_.seed,
-            mu=args_.mu
-        )
+            input_dim=args_.input_dimension,
+            output_dim=args_.output_dimension
 
-    if args_.decentralized:
-        aggregator_type = 'decentralized'
-    else:
-        aggregator_type = AGGREGATOR_TYPE[args_.method]
+        )
 
     aggregator =\
         get_aggregator(
             aggregator_type=aggregator_type,
             clients=clients,
-            global_learners_ensemble=global_learners_ensemble,
+            global_learners_ensemble=global_learner,
             lr_lambda=args_.lr_lambda,
             lr=args_.lr,
             q=args_.q,

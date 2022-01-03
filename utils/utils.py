@@ -10,7 +10,7 @@ from learners.learner import *
 from models import *
 from utils.metrics import *
 from utils.optimizer import *
-
+from aggregator import *
 
 def get_loaders(root_path, batch_size):
     """
@@ -30,7 +30,7 @@ def get_loaders(root_path, batch_size):
 
     train_iterators, val_iterators, test_iterators = [], [], []
 
-    for task_id, client_dir in enumerate(tqdm(os.listdir(root_path))):
+    for client_id, client_dir in enumerate(tqdm(os.listdir(root_path))):
         client_data_path = os.path.join(root_path, client_dir)
 
         train_dataset = TabularDataset(os.path.join(client_data_path, 'train.pkl'))
@@ -118,6 +118,107 @@ def get_learner(
         is_binary_classification=is_binary_classification
     )
 
+def get_aggregator(
+        aggregator_type,
+        clients,
+        global_learners_ensemble,
+        lr,
+        lr_lambda,
+        mu,
+        communication_probability,
+        q,
+        sampling_rate,
+        log_freq,
+        global_train_logger,
+        global_test_logger,
+        test_clients,
+        verbose,
+        seed=None
+):
+    """
+    `personalized` corresponds to pFedMe
+
+    :param aggregator_type:
+    :param clients:
+    :param global_learners_ensemble:
+    :param lr: oly used with FLL aggregator
+    :param lr_lambda: only used with Agnostic aggregator
+    :param mu: penalization term, only used with L2SGD
+    :param communication_probability: communication probability, only used with L2SGD
+    :param q: fairness hyper-parameter, ony used for FFL client
+    :param sampling_rate:
+    :param log_freq:
+    :param global_train_logger:
+    :param global_test_logger:
+    :param test_clients
+    :param verbose: level of verbosity
+    :param seed: default is None
+    :return:
+
+    """
+    seed = (seed if (seed is not None and seed >= 0) else int(time.time()))
+    if aggregator_type == "no_communication":
+        return NoCommunicationAggregator(
+            clients=clients,
+            global_learners_ensemble=global_learners_ensemble,
+            log_freq=log_freq,
+            global_train_logger=global_train_logger,
+            global_test_logger=global_test_logger,
+            test_clients=test_clients,
+            sampling_rate=sampling_rate,
+            verbose=verbose,
+            seed=seed
+        )
+    elif aggregator_type == "centralized":
+        return CentralizedAggregator(
+            clients=clients,
+            global_learners_ensemble=global_learners_ensemble,
+            log_freq=log_freq,
+            global_train_logger=global_train_logger,
+            global_test_logger=global_test_logger,
+            test_clients=test_clients,
+            sampling_rate=sampling_rate,
+            verbose=verbose,
+            seed=seed
+        )
+
+    elif aggregator_type == "clustered":
+        return ClusteredAggregator(
+            clients=clients,
+            global_learners_ensemble=global_learners_ensemble,
+            log_freq=log_freq,
+            test_clients=test_clients,
+            global_train_logger=global_train_logger,
+            global_test_logger=global_test_logger,
+            sampling_rate=sampling_rate,
+            verbose=verbose,
+            seed=seed
+        )
+
+    elif aggregator_type == "decentralized":
+        n_clients = len(clients)
+        mixing_matrix = get_mixing_matrix(n=n_clients, p=0.5, seed=seed)
+
+        return DecentralizedAggregator(
+            clients=clients,
+            global_learners_ensemble=global_learners_ensemble,
+            mixing_matrix=mixing_matrix,
+            log_freq=log_freq,
+            test_clients=test_clients,
+            global_train_logger=global_train_logger,
+            global_test_logger=global_test_logger,
+            sampling_rate=sampling_rate,
+            verbose=verbose,
+            seed=seed
+        )
+    else:
+        raise NotImplementedError(
+            "{aggregator_type} is not a possible aggregator type."
+            " Available are: `no_communication`, `centralized`,"
+            " `personalized`, `clustered`, `fednova`, `AFL`,"
+            " `FFL` and `decentralized`."
+        )
+
 
 class TabularDataset(Dataset):
     """
@@ -182,3 +283,69 @@ def args_to_string(args):
         args_string += "_adapt"
 
     return args_string
+
+
+def copy_model(target, source):
+    """
+    Copy learners_weights from target to source
+    :param target:
+    :type target: nn.Module
+    :param source:
+    :type source: nn.Module
+    :return: None
+
+    """
+    target.load_state_dict(source.state_dict())
+
+
+def get_communication_graph(n, p, seed):
+    return nx.generators.random_graphs.binomial_graph(n=n, p=p, seed=seed)
+
+
+def compute_mixing_matrix(adjacency_matrix):
+    """
+    computes the mixing matrix associated to a graph defined by its `adjacency_matrix` using
+    FMMC (Fast Mixin Markov Chain), see https://web.stanford.edu/~boyd/papers/pdf/fmmc.pdf
+
+    :param adjacency_matrix: np.array()
+    :return: optimal mixing matrix as np.array()
+    """
+    network_mask = 1 - adjacency_matrix
+    N = adjacency_matrix.shape[0]
+
+    s = cp.Variable()
+    W = cp.Variable((N, N))
+    objective = cp.Minimize(s)
+
+    constraints = [
+        W == W.T,
+        W @ np.ones((N, 1)) == np.ones((N, 1)),
+        cp.multiply(W, network_mask) == np.zeros((N, N)),
+        -s * np.eye(N) << W - (np.ones((N, 1)) @ np.ones((N, 1)).T) / N,
+        W - (np.ones((N, 1)) @ np.ones((N, 1)).T) / N << s * np.eye(N),
+        np.zeros((N, N)) <= W
+    ]
+
+    prob = cp.Problem(objective, constraints)
+    prob.solve()
+
+    mixing_matrix = W.value
+
+    mixing_matrix *= adjacency_matrix
+
+    mixing_matrix = np.multiply(mixing_matrix, mixing_matrix >= 0)
+
+    # Force symmetry (added for numerical stability)
+    for i in range(N):
+        if np.abs(np.sum(mixing_matrix[i, i:])) >= 1e-20:
+            mixing_matrix[i, i:] *= (1 - np.sum(mixing_matrix[i, :i])) / np.sum(mixing_matrix[i, i:])
+            mixing_matrix[i:, i] = mixing_matrix[i, i:]
+
+    return mixing_matrix
+
+
+def get_mixing_matrix(n, p, seed):
+    graph = get_communication_graph(n, p, seed)
+    adjacency_matrix = nx.adjacency_matrix(graph, weight=None).todense()
+
+    return compute_mixing_matrix(adjacency_matrix)
