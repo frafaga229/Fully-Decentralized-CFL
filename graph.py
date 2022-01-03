@@ -3,6 +3,7 @@ from copy import deepcopy
 
 class Graph_Manager:
     def __init__(self, graph):
+        pass
 
 
 

@@ -1,34 +1,100 @@
 import torch
+from learners.learner import *
+from copy import deepcopy
 
 class Client(object):
 
-    def __init__(self, id, loader, model, criterion, device=None):
+    def __init__(
+            self,
+            learner,
+            train_iterator,
+            val_iterator,
+            test_iterator,
+            logger,
+            local_steps,
+            tune_locally=False
+    ):
 
-        self.id = id
-        self.loader = loader
-        self.model = model
-        self.criterion = criterion
-        if device is None:
-            self.device = torch.device("cpu")
-        self.device = device
+        self.learner = learner
+        self.tune_locally = tune_locally
 
-    def local_step(self, n_epochs):
+        if self.tune_locally:
+            self.tuned_learners_ensemble = deepcopy(self.learner)
+        else:
+            self.tuned_learners_ensemble = None
+
+        self.binary_classification_flag = self.learner.is_binary_classification
+
+        self.train_iterator = train_iterator
+        self.val_iterator = val_iterator
+        self.test_iterator = test_iterator
+
+        self.train_loader = iter(self.train_iterator)
+
+        self.n_train_samples = len(self.train_iterator.dataset)
+        self.n_test_samples = len(self.test_iterator.dataset)
+
+        self.local_steps = local_steps
+        self.counter = 0
+        self.logger = logger
+
+
+    def get_next_batch(self):
+        try:
+            batch = next(self.train_loader)
+        except StopIteration:
+            self.train_loader = iter(self.train_iterator)
+            batch = next(self.train_loader)
+
+        return batch
+
+    def local_step(self, single_batch_flag=False, *args, **kwargs):
         """
-        perform a local step
+        perform on step for the client
+
+        :param single_batch_flag: if true, the client only uses one batch to perform the update
+        :return
+            clients_updates: ()
         """
-        for _ in range(n_epochs):
-            batch = next(iter(self.loader))
-            self.compute_gradients(batch)
-            x, y = batch
-            x, y = x.to(self.device), y.to(self.device)
+        self.counter += 1
+        self.update_sample_weights()
+        self.update_learners_weights()
 
-            self.model.zero_grad()
+        if single_batch_flag:
+            batch = self.get_next_batch()
+            client_updates = \
+                self.learners_ensemble.fit_batch(
+                    batch=batch,
+                    weights=self.samples_weights
+                )
+        else:
+            client_updates = \
+                self.learners_ensemble.fit_epochs(
+                    iterator=self.train_iterator,
+                    n_epochs=self.local_steps,
+                    weights=self.samples_weights
+                )
 
-            y_pred = self.model(x)
 
-            loss = self.criterion(y_pred, y)
-            loss.backward()
+        return client_updates
 
-        # how we push the gradients to other clients??
+    def write_logs(self):
+        if self.tune_locally:
+            self.update_tuned_learners()
+
+        if self.tune_locally:
+            train_loss, train_acc = self.tuned_learners_ensemble.evaluate_iterator(self.val_iterator)
+            test_loss, test_acc = self.tuned_learners_ensemble.evaluate_iterator(self.test_iterator)
+        else:
+            train_loss, train_acc = self.learners_ensemble.evaluate_iterator(self.val_iterator)
+            test_loss, test_acc = self.learners_ensemble.evaluate_iterator(self.test_iterator)
+
+        self.logger.add_scalar("Train/Loss", train_loss, self.counter)
+        self.logger.add_scalar("Train/Metric", train_acc, self.counter)
+        self.logger.add_scalar("Test/Loss", test_loss, self.counter)
+        self.logger.add_scalar("Test/Metric", test_acc, self.counter)
+
+        return train_loss, train_acc, test_loss, test_acc
+
 
 

@@ -8,7 +8,6 @@ from sklearn.metrics import pairwise_distances
 from sklearn.cluster import AgglomerativeClustering
 
 
-
 class Aggregator:
     def __init__(self, clients, graph_manager):
 
