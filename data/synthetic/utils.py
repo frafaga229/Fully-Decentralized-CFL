@@ -1,6 +1,5 @@
 import time
-import json
-
+import pickle
 import numpy as np
 from tqdm import tqdm
 
@@ -22,7 +21,7 @@ class SyntheticDataGenerator:
 
     save_data(dir_path)
 
-    save_metadata(json_path)
+    save_metadata(path_)
 
     """
     def __init__(
@@ -91,24 +90,13 @@ class SyntheticDataGenerator:
 
         return all_data
 
-    def save_metadata(self, json_path):
-        """
-
-        Parameters
-        ----------
-        json_path: expected to be a json file
-
-        Returns
-        -------
-            None
-        """
+    def save_metadata(self, path_):
         metadata = {
             "base_model": self.base_model.tolist(),
             "clusters_models": self.clusters_models.tolist()
         }
-
-        with open(json_path, "w") as f:
-            json.dump(metadata, f)
+        with open(path_, 'wb') as f:
+            pickle.dump(metadata, f)
 
 
 def iid_divide(l, g):
@@ -145,3 +133,8 @@ def split_list_by_indices(l, indices):
         current_index = index
 
     return res
+
+def save_data(x, y, path_):
+    data = list(zip(x, y))
+    with open(path_, 'wb') as f:
+        pickle.dump(data, f)

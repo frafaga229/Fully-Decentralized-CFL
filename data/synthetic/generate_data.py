@@ -1,15 +1,12 @@
 import os
 import argparse
-
+import numpy as np
 import networkx as nx
-
 from utils import *
-
 
 BOX = (-1.0, 1.0)
 
 PATH = "all_data/"
-METADATA_PATH = "metadata.json"
 GRAPH_PATH = "graph.json"
 
 
@@ -19,13 +16,15 @@ def parse_args(args_list=None):
     parser.add_argument(
         '--n_clients',
         help='number of tasks/clients;',
-        required=True,
+        default=10,
+        #required=True,
         type=int
     )
     parser.add_argument(
         '--dimension',
         help='data dimension;',
-        required=True,
+        default=4,
+        #required=True,
         type=int,
     )
     parser.add_argument(
@@ -38,7 +37,7 @@ def parse_args(args_list=None):
         '--graph_hetero_level',
         help='Heterogeneity level of the graph clustering; smaller value for clearer clustering',
         type=float,
-        default=0.
+        default=0.2
     )
     parser.add_argument(
         '--noise_level',
@@ -90,7 +89,7 @@ if __name__ == "__main__":
 
     args = parse_args()
 
-    args.graph_hetero_level = max(args.graph_hetero_level, (args.n_clusters-1)/args.n_clusters)
+    args.graph_hetero_level = min(args.graph_hetero_level, (args.n_clusters-1)/args.n_clusters)
 
     data_generator = \
         SyntheticDataGenerator(
@@ -105,7 +104,7 @@ if __name__ == "__main__":
         )
 
     print("\n==> Save metadata..")
-    data_generator.save_metadata(json_path=METADATA_PATH)
+    data_generator.save_metadata(os.path.join(PATH, "meta.pkl"))
 
     clients_per_cluster = iid_divide(list(range(args.n_clients)), args.n_clusters)
     n_clients_per_cluster = [len(l) for l in clients_per_cluster]
@@ -122,7 +121,7 @@ if __name__ == "__main__":
     # with open(GRAPH_PATH, "w") as f:
     #    json.dump(json_graph, f)
 
-    print("\n==>Save data..")
+    print("\n==> Save data..")
 
     all_data = data_generator.generate_data()
 
@@ -141,10 +140,8 @@ if __name__ == "__main__":
                     "y": data_per_client["y"][idx]
                 }
 
-                client_dir = os.path.join(PATH, f"{client_id}")
+                client_dir = os.path.join(PATH, f"client_{client_id}")
                 os.makedirs(client_dir, exist_ok=True)
 
-                save_path = os.path.join(client_dir, f"{mode}.json")
+                save_data(client_data["x"], client_data["y"], os.path.join(client_dir, f"{mode}.pkl"))
 
-                with open(save_path, "w") as f:
-                    json.dump(client_data, f)
