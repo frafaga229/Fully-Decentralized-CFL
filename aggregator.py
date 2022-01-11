@@ -8,8 +8,20 @@ import numpy.linalg as LA
 from sklearn.metrics import pairwise_distances
 from sklearn.cluster import AgglomerativeClustering
 
-from .utils.utils import *
+from utils.utils import *
 
+
+def copy_model(target, source):
+    """
+    Copy learners_weights from target to source
+    :param target:
+    :type target: nn.Module
+    :param source:
+    :type source: nn.Module
+    :return: None
+
+    """
+    target.load_state_dict(source.state_dict())
 
 class Aggregator(ABC):
     r""" Base class for Aggregator. `Aggregator` dictates communications between clients
@@ -102,7 +114,7 @@ class Aggregator(ABC):
 
         self.n_clients = len(clients)
         self.n_test_clients = len(test_clients)
-        self.n_learners = len(self.global_learners_ensemble)
+        self.n_learners = 1
 
         self.clients_weights =\
             torch.tensor(
@@ -128,10 +140,11 @@ class Aggregator(ABC):
     def update_clients(self):
         pass
 
+
+
     def update_test_clients(self):
         for client in self.test_clients:
-            for learner_id, learner in enumerate(client.learners_ensemble):
-                copy_model(target=learner.model, source=self.global_learners_ensemble[learner_id].model)
+            copy_model(target=client.learner.model, source=self.global_learners_ensemble.model)
 
         for client in self.test_clients:
             client.update_sample_weights()
@@ -218,7 +231,7 @@ class Aggregator(ABC):
             save_path = os.path.join(dir_path, f"{mode}_client_weights.npy")
 
             for client_id, client in enumerate(clients):
-                weights[client_id] = client.learners_ensemble.learners_weights
+                weights[client_id] = client.learner.learners_weights
 
             np.save(save_path, weights)
 
@@ -245,7 +258,7 @@ class Aggregator(ABC):
             weights = np.load(chkpts_path)
 
             for client_id, client in enumerate(clients):
-                client.learners_ensemble.learners_weights = weights[client_id]
+                client.learner.learners_weights = weights[client_id]
 
     def sample_clients(self):
         """
@@ -294,7 +307,7 @@ class CentralizedAggregator(Aggregator):
             client.step()
 
         for learner_id, learner in enumerate(self.global_learners_ensemble):
-            learners = [client.learners_ensemble[learner_id] for client in self.clients]
+            learners = [client.learner[learner_id] for client in self.clients]
             average_learners(learners, learner, weights=self.clients_weights)
 
         # assign the updated model to all clients
@@ -307,7 +320,7 @@ class CentralizedAggregator(Aggregator):
 
     def update_clients(self):
         for client in self.clients:
-            for learner_id, learner in enumerate(client.learners_ensemble):
+            for learner_id, learner in enumerate(client.learner):
                 copy_model(learner.model, self.global_learners_ensemble[learner_id].model)
 
                 if callable(getattr(learner.optimizer, "set_initial_params", None)):
@@ -401,13 +414,13 @@ class ClusteredAggregator(Aggregator):
 
         self.n_clusters = len(self.clusters_indices)
 
-        self.global_learners = [deepcopy(self.clients[0].learners_ensemble) for _ in range(self.n_clusters)]
+        self.global_learners = [deepcopy(self.clients[0].learner) for _ in range(self.n_clusters)]
 
         for cluster_id, indices in enumerate(self.clusters_indices):
             cluster_clients = [self.clients[i] for i in indices]
             for learner_id in range(self.n_learners):
                 average_learners(
-                    learners=[client.learners_ensemble[learner_id] for client in cluster_clients],
+                    learners=[client.learner[learner_id] for client in cluster_clients],
                     target_learner=self.global_learners[cluster_id][learner_id],
                     weights=self.clients_weights[indices] / self.clients_weights[indices].sum()
                 )
@@ -424,7 +437,7 @@ class ClusteredAggregator(Aggregator):
             cluster_learners = self.global_learners[cluster_id]
 
             for i in indices:
-                for learner_id, learner in enumerate(self.clients[i].learners_ensemble):
+                for learner_id, learner in enumerate(self.clients[i].learner):
                     copy_model(
                         target=learner.model,
                         source=cluster_learners[learner_id].model
@@ -481,7 +494,7 @@ class DecentralizedAggregator(Aggregator):
         )
 
         for learner_id, global_learner in enumerate(self.global_learners_ensemble):
-            state_dicts = [client.learners_ensemble[learner_id].model.state_dict() for client in self.clients]
+            state_dicts = [client.learner[learner_id].model.state_dict() for client in self.clients]
 
             for key, param in global_learner.model.state_dict().items():
                 shape_ = param.shape
@@ -496,7 +509,7 @@ class DecentralizedAggregator(Aggregator):
                     sd[key] = models_params[ii].view(shape_)
 
             for client_id, client in enumerate(self.clients):
-                client.learners_ensemble[learner_id].model.load_state_dict(state_dicts[client_id])
+                client.learner[learner_id].model.load_state_dict(state_dicts[client_id])
 
         self.c_round += 1
 

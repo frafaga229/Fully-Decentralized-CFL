@@ -7,7 +7,7 @@ class Client(object):
 
     def __init__(
             self,
-            learners_ensemble,
+            learner,
             train_iterator,
             val_iterator,
             test_iterator,
@@ -16,16 +16,16 @@ class Client(object):
             tune_locally=False
     ):
 
-        self.learners_ensemble = learners_ensemble
-        self.n_learners = len(self.learners_ensemble)
+        self.learner = learner
+        self.n_learners = 1
         self.tune_locally = tune_locally
 
         if self.tune_locally:
-            self.tuned_learners_ensemble = deepcopy(self.learners_ensemble)
+            self.tuned_learner = deepcopy(self.learner)
         else:
-            self.tuned_learners_ensemble = None
+            self.tuned_learner = None
 
-        self.binary_classification_flag = self.learners_ensemble.is_binary_classification
+        self.binary_classification_flag = self.learner.is_binary_classification
 
         self.train_iterator = train_iterator
         self.val_iterator = val_iterator
@@ -67,13 +67,13 @@ class Client(object):
         if single_batch_flag:
             batch = self.get_next_batch()
             client_updates = \
-                self.learners_ensemble.fit_batch(
+                self.learner.fit_batch(
                     batch=batch,
                     weights=self.samples_weights
                 )
         else:
             client_updates = \
-                self.learners_ensemble.fit_epochs(
+                self.learner.fit_epochs(
                     iterator=self.train_iterator,
                     n_epochs=self.local_steps,
                     weights=self.samples_weights
@@ -86,11 +86,11 @@ class Client(object):
             self.update_tuned_learners()
 
         if self.tune_locally:
-            train_loss, train_acc = self.tuned_learners_ensemble.evaluate_iterator(self.val_iterator)
-            test_loss, test_acc = self.tuned_learners_ensemble.evaluate_iterator(self.test_iterator)
+            train_loss, train_acc = self.tuned_learner.evaluate_iterator(self.val_iterator)
+            test_loss, test_acc = self.tuned_learner.evaluate_iterator(self.test_iterator)
         else:
-            train_loss, train_acc = self.learners_ensemble.evaluate_iterator(self.val_iterator)
-            test_loss, test_acc = self.learners_ensemble.evaluate_iterator(self.test_iterator)
+            train_loss, train_acc = self.learner.evaluate_iterator(self.val_iterator)
+            test_loss, test_acc = self.learner.evaluate_iterator(self.test_iterator)
 
         self.logger.add_scalar("Train/Loss", train_loss, self.counter)
         self.logger.add_scalar("Train/Metric", train_acc, self.counter)
@@ -109,8 +109,8 @@ class Client(object):
         if not self.tune_locally:
             return
 
-        for learner_id, learner in enumerate(self.tuned_learners_ensemble):
-            copy_model(source=self.learners_ensemble[learner_id].model, target=learner.model)
+        for learner_id, learner in enumerate(self.tuned_learner):
+            copy_model(source=self.learner[learner_id].model, target=learner.model)
             learner.fit_epochs(self.train_iterator, self.local_steps, weights=self.samples_weights[learner_id])
 
 

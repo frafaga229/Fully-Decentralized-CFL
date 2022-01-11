@@ -349,3 +349,4 @@ def get_mixing_matrix(n, p, seed):
     adjacency_matrix = nx.adjacency_matrix(graph, weight=None).todense()
 
     return compute_mixing_matrix(adjacency_matrix)
+

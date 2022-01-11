@@ -1,6 +1,5 @@
 import torch
 
-
 class Learner:
     """
     Responsible of training and evaluating a (deep-)learning model

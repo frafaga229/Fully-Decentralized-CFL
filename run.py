@@ -1,7 +1,7 @@
-from .utils.utils import *
-from .utils.args import *
+from utils.utils import *
+from utils.args import *
 from torch.utils.tensorboard import SummaryWriter
-
+from client import *
 
 def init_clients(args_, root_path, logs_root):
     """
@@ -45,8 +45,8 @@ def init_clients(args_, root_path, logs_root):
         os.makedirs(logs_path, exist_ok=True)
         logger = SummaryWriter(logs_path)
 
-        client = client(
-            learners_emsemble=learner,
+        client = Client(
+            learner=learner,
             train_iterator=train_iterator,
             val_iterator=val_iterator,
             test_iterator=test_iterator,
@@ -77,12 +77,12 @@ def run_experiment(args_):
         logs_root=os.path.join(logs_root, "train")
     )
 
-    # print("==> Test Clients initialization..")
-    # test_clients = init_clients(
-    #     args_,
-    #     root_path=os.path.join(data_dir, "test"),
-    #     logs_root=os.path.join(logs_root, "test")
-    # )
+    print("==> Test Clients initialization..")
+    test_clients = init_clients(
+        args_,
+        root_path=data_dir,
+        logs_root=os.path.join(logs_root, "test")
+    )
 
     logs_path = os.path.join(logs_root, "train", "global")
     os.makedirs(logs_path, exist_ok=True)
@@ -106,6 +106,19 @@ def run_experiment(args_):
             output_dim=args_.output_dimension
 
         )
+
+    AGGREGATOR_TYPE = {
+        "FedAvg": "centralized",
+        "FedProx": "centralized",
+        "local": "no_communication",
+        "clustered": "clustered",
+    }
+    if args_.decentralized:
+        aggregator_type = 'decentralized'
+    else:
+        aggregator_type = AGGREGATOR_TYPE[args_.method]
+
+
 
     aggregator =\
         get_aggregator(
