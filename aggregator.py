@@ -1,15 +1,16 @@
+from abc import ABC, abstractmethod
+
 import os
+import time
 import random
 
-from abc import ABC, abstractmethod
-from copy import deepcopy
-
+import numpy as np
 import numpy.linalg as LA
 
 from sklearn.metrics import pairwise_distances
 from sklearn.cluster import AgglomerativeClustering
 
-from utils.utils import *
+from copy import deepcopy
 from utils.torch_utils import *
 
 
@@ -75,6 +76,7 @@ class Aggregator(ABC):
     load_state
 
     """
+
     def __init__(
             self,
             clients,
@@ -109,7 +111,7 @@ class Aggregator(ABC):
         self.n_clients = len(clients)
         self.n_learners = 1
 
-        self.clients_weights =\
+        self.clients_weights = \
             torch.tensor(
                 [client.n_train_samples for client in self.clients],
                 dtype=torch.float32
@@ -230,6 +232,7 @@ class NoCommunicationAggregator(Aggregator):
     r"""Clients do not communicate. Each client work locally
 
     """
+
     def mix(self):
         self.sample_clients()
 
@@ -250,6 +253,7 @@ class CentralizedAggregator(Aggregator):
      All clients get fully synchronized with the average client.
 
     """
+
     def mix(self):
         self.sample_clients()
 
@@ -280,6 +284,7 @@ class ClusteredAggregator(Aggregator):
 
      Follows implementation from https://github.com/felisat/clustered-federated-learning
     """
+
     def __init__(
             self,
             clients,

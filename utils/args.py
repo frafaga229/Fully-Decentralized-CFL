@@ -1,5 +1,6 @@
 import argparse
 
+
 def parse_args(args_list=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(

@@ -2,7 +2,8 @@ import os
 import argparse
 import numpy as np
 import networkx as nx
-from utils import *
+
+from utils import SyntheticDataGenerator, iid_divide, save_data
 
 BOX = (-1.0, 1.0)
 
@@ -17,14 +18,12 @@ def parse_args(args_list=None):
         '--n_clients',
         help='number of tasks/clients;',
         default=10,
-        #required=True,
         type=int
     )
     parser.add_argument(
         '--dimension',
         help='data dimension;',
         default=4,
-        #required=True,
         type=int,
     )
     parser.add_argument(
@@ -144,4 +143,3 @@ if __name__ == "__main__":
                 os.makedirs(client_dir, exist_ok=True)
 
                 save_data(client_data["x"], client_data["y"], os.path.join(client_dir, f"{mode}.pkl"))
-

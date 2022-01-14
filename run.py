@@ -1,9 +1,10 @@
 from utils.utils import *
 from utils.args import *
-from torch.utils.tensorboard import SummaryWriter
+from utils.constants import *
+
 from client import *
 
-from utils.constants import *
+from torch.utils.tensorboard import SummaryWriter
 
 
 def init_clients(args_, root_path, logs_root):
@@ -36,7 +37,6 @@ def init_clients(args_, root_path, logs_root):
                 optimizer_name=args_.optimizer,
                 scheduler_name=args_.lr_scheduler,
                 initial_lr=args_.lr,
-                mu=args_.mu,
                 n_rounds=args_.n_rounds,
                 seed=args_.seed,
                 input_dim=args_.input_dimension,
@@ -101,7 +101,6 @@ def run_experiment(args_):
             optimizer_name=args_.optimizer,
             scheduler_name=args_.lr_scheduler,
             initial_lr=args_.lr,
-            mu=args_.mu,
             n_rounds=args_.n_rounds,
             seed=args_.seed,
             input_dim=args_.input_dimension,
