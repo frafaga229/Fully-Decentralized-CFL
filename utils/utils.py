@@ -12,6 +12,7 @@ from utils.metrics import *
 from utils.optimizer import *
 from aggregator import *
 
+
 def get_loaders(root_path, batch_size):
     """
     constructs lists of `torch.utils.DataLoader` object from the given files in `root_path`;
@@ -25,7 +26,6 @@ def get_loaders(root_path, batch_size):
         (List[torch.utils.DataLoader], List[torch.utils.DataLoader], List[torch.utils.DataLoader])
 
     """
-
     inputs, targets = None, None
 
     train_iterators, val_iterators, test_iterators = [], [], []
@@ -47,6 +47,7 @@ def get_loaders(root_path, batch_size):
         test_iterators.append(test_iterator)
 
     return train_iterators, val_iterators, test_iterators
+
 
 def get_learner(
         name,
@@ -80,7 +81,7 @@ def get_learner(
     torch.manual_seed(seed)
 
     if name == "synthetic":
-        if output_dim == 2:
+        if output_dim == 1:
             criterion = nn.BCEWithLogitsLoss(reduction="none").to(device)
             metric = binary_accuracy
             model = LinearModel(input_dim, 1).to(device)

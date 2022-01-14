@@ -3,6 +3,7 @@ from utils.args import *
 from torch.utils.tensorboard import SummaryWriter
 from client import *
 
+
 def init_clients(args_, root_path, logs_root):
     """
     initialize clients from data folders
@@ -38,7 +39,6 @@ def init_clients(args_, root_path, logs_root):
                 seed=args_.seed,
                 input_dim=args_.input_dimension,
                 output_dim=args_.output_dimension
-
             )
 
         logs_path = os.path.join(logs_root, "client_{}".format(client_id))
