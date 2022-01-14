@@ -2,6 +2,7 @@ import torch
 import torch.optim as optim
 import numpy as np
 
+
 def get_optimizer(optimizer_name, model, lr_initial, mu=0.):
     """
     Gets torch.optim.Optimizer given an optimizer name, a model and learning rate
@@ -33,14 +34,6 @@ def get_optimizer(optimizer_name, model, lr_initial, mu=0.):
             weight_decay=5e-4
         )
 
-    elif optimizer_name == "prox_sgd":
-        return ProxSGD(
-            [param for param in model.parameters() if param.requires_grad],
-            mu=mu,
-            lr=lr_initial,
-            momentum=0.,
-            weight_decay=5e-4
-        )
     else:
         raise NotImplementedError("Other optimizer are not implemented")
 

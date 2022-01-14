@@ -3,8 +3,8 @@ from learners.learner import *
 from copy import deepcopy
 from utils.utils import copy_model
 
-class Client(object):
 
+class Client(object):
     def __init__(
             self,
             learner,
@@ -36,8 +36,6 @@ class Client(object):
         self.n_train_samples = len(self.train_iterator.dataset)
         self.n_test_samples = len(self.test_iterator.dataset)
 
-        self.samples_weights = torch.ones(self.n_learners, self.n_train_samples) / self.n_learners
-
         self.local_steps = local_steps
 
         self.counter = 0
@@ -61,29 +59,23 @@ class Client(object):
             clients_updates: ()
         """
         self.counter += 1
-        self.update_sample_weights()
-        self.update_learners_weights()
 
         if single_batch_flag:
             batch = self.get_next_batch()
             client_updates = \
                 self.learner.fit_batch(
                     batch=batch,
-                    weights=self.samples_weights
                 )
         else:
             client_updates = \
                 self.learner.fit_epochs(
                     iterator=self.train_iterator,
-                    n_epochs=self.local_steps,
-                    weights=self.samples_weights
+                    n_epochs=self.local_steps
                 )
 
         return client_updates
 
     def write_logs(self):
-        if self.tune_locally:
-            self.update_tuned_learners()
 
         if self.tune_locally:
             train_loss, train_acc = self.tuned_learner.evaluate_iterator(self.val_iterator)
@@ -98,20 +90,3 @@ class Client(object):
         self.logger.add_scalar("Test/Metric", test_acc, self.counter)
 
         return train_loss, train_acc, test_loss, test_acc
-
-    def update_sample_weights(self):
-        pass
-
-    def update_learners_weights(self):
-        pass
-
-    def update_tuned_learners(self):
-        if not self.tune_locally:
-            return
-
-        for learner_id, learner in enumerate(self.tuned_learner):
-            copy_model(source=self.learner[learner_id].model, target=learner.model)
-            learner.fit_epochs(self.train_iterator, self.local_steps, weights=self.samples_weights[learner_id])
-
-
-

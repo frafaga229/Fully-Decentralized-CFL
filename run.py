@@ -118,18 +118,11 @@ def run_experiment(args_):
     else:
         aggregator_type = AGGREGATOR_TYPE[args_.method]
 
-
-
     aggregator =\
         get_aggregator(
             aggregator_type=aggregator_type,
             clients=clients,
             global_learners_ensemble=global_learner,
-            lr_lambda=args_.lr_lambda,
-            lr=args_.lr,
-            q=args_.q,
-            mu=args_.mu,
-            communication_probability=args_.communication_probability,
             sampling_rate=args_.sampling_rate,
             log_freq=args_.log_freq,
             global_train_logger=global_train_logger,
