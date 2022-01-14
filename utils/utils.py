@@ -3,6 +3,9 @@ import time
 import torch
 import pickle
 
+import networkx as nx
+import cvxpy as cp
+
 from tqdm import tqdm
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -26,8 +29,6 @@ def get_loaders(root_path, batch_size):
         (List[torch.utils.DataLoader], List[torch.utils.DataLoader], List[torch.utils.DataLoader])
 
     """
-    inputs, targets = None, None
-
     train_iterators, val_iterators, test_iterators = [], [], []
 
     for client_id, client_dir in enumerate(tqdm(os.listdir(root_path))):
@@ -119,15 +120,11 @@ def get_learner(
         is_binary_classification=is_binary_classification
     )
 
+
 def get_aggregator(
         aggregator_type,
         clients,
         global_learners_ensemble,
-        lr,
-        lr_lambda,
-        mu,
-        communication_probability,
-        q,
         sampling_rate,
         log_freq,
         global_train_logger,
@@ -142,11 +139,6 @@ def get_aggregator(
     :param aggregator_type:
     :param clients:
     :param global_learners_ensemble:
-    :param lr: oly used with FLL aggregator
-    :param lr_lambda: only used with Agnostic aggregator
-    :param mu: penalization term, only used with L2SGD
-    :param communication_probability: communication probability, only used with L2SGD
-    :param q: fairness hyper-parameter, ony used for FFL client
     :param sampling_rate:
     :param log_freq:
     :param global_train_logger:
@@ -216,8 +208,7 @@ def get_aggregator(
         raise NotImplementedError(
             "{aggregator_type} is not a possible aggregator type."
             " Available are: `no_communication`, `centralized`,"
-            " `personalized`, `clustered`, `fednova`, `AFL`,"
-            " `FFL` and `decentralized`."
+            "`clustered` and `decentralized`."
         )
 
 
@@ -279,9 +270,6 @@ def args_to_string(args):
     args_to_show = ["experiment", "method"]
     for arg in args_to_show:
         args_string = os.path.join(args_string, str(getattr(args, arg)))
-
-    if args.locally_tune_clients:
-        args_string += "_adapt"
 
     return args_string
 

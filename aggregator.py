@@ -23,6 +23,7 @@ def copy_model(target, source):
     """
     target.load_state_dict(source.state_dict())
 
+
 class Aggregator(ABC):
     r""" Base class for Aggregator. `Aggregator` dictates communications between clients
 
@@ -139,8 +140,6 @@ class Aggregator(ABC):
     @abstractmethod
     def update_clients(self):
         pass
-
-
 
     def update_test_clients(self):
         for client in self.test_clients:
