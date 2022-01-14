@@ -34,7 +34,7 @@ class Aggregator(ABC):
     ----------
     clients: List[Client]
 
-    global_learners_ensemble: List[Learner]
+    global_learner: List[Learner]
 
     sampling_rate: proportion of clients used at each round; default is `1.`
 
@@ -340,15 +340,8 @@ class ClusteredAggregator(Aggregator):
 
         new_cluster_indices = []
         for indices in self.clusters_indices:
-            max_update_norm = np.zeros(self.n_learners)
-            mean_update_norm = np.zeros(self.n_learners)
-
-            for learner_id in range(self.n_learners):
-                max_update_norm[learner_id] = LA.norm(clients_updates[indices], axis=1).max()
-                mean_update_norm[learner_id] = LA.norm(np.mean(clients_updates[indices], axis=0))
-
-            max_update_norm = max_update_norm.mean()
-            mean_update_norm = mean_update_norm.mean()
+            max_update_norm = LA.norm(clients_updates[indices], axis=1).max()
+            mean_update_norm = LA.norm(np.mean(clients_updates[indices], axis=0))
 
             if mean_update_norm < self.tol_1 and max_update_norm > self.tol_2 and len(indices) > 2:
                 clustering = AgglomerativeClustering(affinity="precomputed", linkage="complete")
@@ -367,12 +360,12 @@ class ClusteredAggregator(Aggregator):
 
         for cluster_id, indices in enumerate(self.clusters_indices):
             cluster_clients = [self.clients[i] for i in indices]
-            for learner_id in range(self.n_learners):
-                average_learners(
-                    learners=[client.learner[learner_id] for client in cluster_clients],
-                    target_learner=self.global_learners[cluster_id][learner_id],
-                    weights=self.clients_weights[indices] / self.clients_weights[indices].sum()
-                )
+
+            average_learners(
+                learners=[client.learner for client in cluster_clients],
+                target_learner=self.global_learners[cluster_id],
+                weights=self.clients_weights[indices] / self.clients_weights[indices].sum()
+            )
 
         self.update_clients()
 
