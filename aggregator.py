@@ -1,3 +1,4 @@
+import os
 import random
 
 from abc import ABC, abstractmethod
@@ -394,7 +395,7 @@ class DecentralizedAggregator(Aggregator):
     def __init__(
             self,
             clients,
-            global_learners_ensemble,
+            global_learner,
             mixing_matrix,
             log_freq,
             global_train_logger,
@@ -407,7 +408,7 @@ class DecentralizedAggregator(Aggregator):
 
         super(DecentralizedAggregator, self).__init__(
             clients=clients,
-            global_learners_ensemble=global_learners_ensemble,
+            global_learner=global_learner,
             log_freq=log_freq,
             global_train_logger=global_train_logger,
             global_test_logger=global_test_logger,
@@ -436,23 +437,22 @@ class DecentralizedAggregator(Aggregator):
             device=self.device
         )
 
-        for learner_id, global_learner in enumerate(self.global_learners_ensemble):
-            state_dicts = [client.learner[learner_id].model.state_dict() for client in self.clients]
+        state_dicts = [client.learner.model.state_dict() for client in self.clients]
 
-            for key, param in global_learner.model.state_dict().items():
-                shape_ = param.shape
-                models_params = torch.zeros(self.n_clients, int(np.prod(shape_)), device=self.device)
+        for key, param in self.global_learner.model.state_dict().items():
+            shape_ = param.shape
+            models_params = torch.zeros(self.n_clients, int(np.prod(shape_)), device=self.device)
 
-                for ii, sd in enumerate(state_dicts):
-                    models_params[ii] = sd[key].view(1, -1)
+            for ii, sd in enumerate(state_dicts):
+                models_params[ii] = sd[key].view(1, -1)
 
-                models_params = mixing_matrix @ models_params
+            models_params = mixing_matrix @ models_params
 
-                for ii, sd in enumerate(state_dicts):
-                    sd[key] = models_params[ii].view(shape_)
+            for ii, sd in enumerate(state_dicts):
+                sd[key] = models_params[ii].view(shape_)
 
-            for client_id, client in enumerate(self.clients):
-                client.learner[learner_id].model.load_state_dict(state_dicts[client_id])
+        for client_id, client in enumerate(self.clients):
+            client.learner.model.load_state_dict(state_dicts[client_id])
 
         self.c_round += 1
 

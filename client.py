@@ -1,7 +1,4 @@
-import torch
-from learners.learner import *
 from copy import deepcopy
-from utils.utils import copy_model
 
 
 class Client(object):
@@ -50,7 +47,7 @@ class Client(object):
 
         return batch
 
-    def step(self, single_batch_flag=False, *args, **kwargs):
+    def step(self, single_batch_flag=False):
         """
         perform on step for the client
 

@@ -3,6 +3,8 @@ from utils.args import *
 from torch.utils.tensorboard import SummaryWriter
 from client import *
 
+from utils.constants import *
+
 
 def init_clients(args_, root_path, logs_root):
     """
@@ -107,12 +109,6 @@ def run_experiment(args_):
 
         )
 
-    AGGREGATOR_TYPE = {
-        "FedAvg": "centralized",
-        "FedProx": "centralized",
-        "local": "no_communication",
-        "clustered": "clustered",
-    }
     if args_.decentralized:
         aggregator_type = 'decentralized'
     else:
@@ -122,7 +118,7 @@ def run_experiment(args_):
         get_aggregator(
             aggregator_type=aggregator_type,
             clients=clients,
-            global_learners_ensemble=global_learner,
+            global_learner=global_learner,
             sampling_rate=args_.sampling_rate,
             log_freq=args_.log_freq,
             global_train_logger=global_train_logger,

@@ -3,7 +3,7 @@ import torch.optim as optim
 import numpy as np
 
 
-def get_optimizer(optimizer_name, model, lr_initial, mu=0.):
+def get_optimizer(optimizer_name, model, lr_initial):
     """
     Gets torch.optim.Optimizer given an optimizer name, a model and learning rate
 
@@ -13,8 +13,6 @@ def get_optimizer(optimizer_name, model, lr_initial, mu=0.):
     :type optimizer_name: nn.Module
     :param lr_initial: initial learning used to build the optimizer
     :type lr_initial: float
-    :param mu: proximal term weight; default=0.
-    :type mu: float
     :return: torch.optim.Optimizer
 
     """

@@ -1,18 +1,5 @@
-import os
-import time
-import torch
-import pickle
-
-import networkx as nx
 import cvxpy as cp
 
-from tqdm import tqdm
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-from learners.learner import *
-from models import *
-from utils.metrics import *
-from utils.optimizer import *
 from aggregator import *
 
 
@@ -124,7 +111,7 @@ def get_learner(
 def get_aggregator(
         aggregator_type,
         clients,
-        global_learners_ensemble,
+        global_learner,
         sampling_rate,
         log_freq,
         global_train_logger,
@@ -138,7 +125,7 @@ def get_aggregator(
 
     :param aggregator_type:
     :param clients:
-    :param global_learners_ensemble:
+    :param global_learner:
     :param sampling_rate:
     :param log_freq:
     :param global_train_logger:
@@ -153,7 +140,7 @@ def get_aggregator(
     if aggregator_type == "no_communication":
         return NoCommunicationAggregator(
             clients=clients,
-            global_learners_ensemble=global_learners_ensemble,
+            global_learner=global_learner,
             log_freq=log_freq,
             global_train_logger=global_train_logger,
             global_test_logger=global_test_logger,
@@ -165,7 +152,7 @@ def get_aggregator(
     elif aggregator_type == "centralized":
         return CentralizedAggregator(
             clients=clients,
-            global_learners_ensemble=global_learners_ensemble,
+            global_learner=global_learner,
             log_freq=log_freq,
             global_train_logger=global_train_logger,
             global_test_logger=global_test_logger,
@@ -178,7 +165,7 @@ def get_aggregator(
     elif aggregator_type == "clustered":
         return ClusteredAggregator(
             clients=clients,
-            global_learners_ensemble=global_learners_ensemble,
+            global_learner=global_learner,
             log_freq=log_freq,
             test_clients=test_clients,
             global_train_logger=global_train_logger,
@@ -194,7 +181,7 @@ def get_aggregator(
 
         return DecentralizedAggregator(
             clients=clients,
-            global_learners_ensemble=global_learners_ensemble,
+            global_learner=global_learner,
             mixing_matrix=mixing_matrix,
             log_freq=log_freq,
             test_clients=test_clients,
@@ -338,4 +325,3 @@ def get_mixing_matrix(n, p, seed):
     adjacency_matrix = nx.adjacency_matrix(graph, weight=None).todense()
 
     return compute_mixing_matrix(adjacency_matrix)
-
