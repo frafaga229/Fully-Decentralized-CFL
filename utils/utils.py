@@ -49,6 +49,34 @@ def get_loaders(root_path, batch_size):
     return train_iterators, val_iterators, test_iterators
 
 
+def get_model(name, device, input_dimension=None):
+    """
+    create model
+
+    Parameters
+    ----------
+    name: model's name
+    device: either cpu or cuda
+    input_dimension
+
+    Returns
+    -------
+        model (torch.nn.Module)
+
+    """
+    if name == "synthetic":
+        model = LinearModel(input_dimension=input_dimension, output_dimension=1)
+    else:
+        raise NotImplementedError(
+            f"{name} is not available!"
+            f" Possible are: `cifar10`, `cifar100`, `emnist`, `femnist` and `shakespeare`."
+        )
+
+    model = model.to(device)
+
+    return model
+
+
 def get_learner(
         name,
         device,
@@ -58,20 +86,17 @@ def get_learner(
         n_rounds,
         seed,
         input_dim=None,
-        output_dim=None
 ):
     """
     constructs the learner corresponding to an experiment for a given seed
 
     :param name: name of the experiment to be used; possible are
-                 {`synthetic`, `cifar10`, `emnist`, `shakespeare`}
+                 {`synthetic`}
     :param device: used device; possible `cpu` and `cuda`
     :param optimizer_name: passed as argument to utils.optim.get_optimizer
     :param scheduler_name: passed as argument to utils.optim.get_lr_scheduler
     :param initial_lr: initial value of the learning rate
-    :param mu: proximal term weight, only used when `optimizer_name=="prox_sgd"`
     :param input_dim: input dimension, only used for synthetic dataset
-    :param output_dim: output_dimension; only used for synthetic dataset
     :param n_rounds: number of training rounds, only used if `scheduler_name == multi_step`, default is None;
     :param seed:
     :return: Learner
@@ -80,19 +105,19 @@ def get_learner(
     torch.manual_seed(seed)
 
     if name == "synthetic":
-        if output_dim == 1:
-            criterion = nn.BCEWithLogitsLoss(reduction="none").to(device)
-            metric = binary_accuracy
-            model = LinearModel(input_dim, 1).to(device)
-            is_binary_classification = True
-        else:
-            criterion = nn.CrossEntropyLoss(reduction="none").to(device)
-            metric = accuracy
-            model = LinearModel(input_dim, output_dim).to(device)
-            is_binary_classification = False
+        criterion = nn.MSELoss(reduction="none").to(device)
+        metric = mse
+        cast_label = True
 
     else:
         raise NotImplementedError
+
+    model = \
+        get_model(
+            name=name,
+            device=device,
+            input_dimension=input_dim,
+        )
 
     optimizer =\
         get_optimizer(
@@ -114,7 +139,7 @@ def get_learner(
         device=device,
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
-        is_binary_classification=is_binary_classification
+        cast_label=cast_label
     )
 
 
@@ -124,23 +149,19 @@ def get_aggregator(
         global_learner,
         sampling_rate,
         log_freq,
-        global_train_logger,
-        global_test_logger,
-        test_clients,
+        global_logger,
         verbose,
         seed=None
 ):
     """
     `personalized` corresponds to pFedMe
 
-    :param aggregator_type:
+    :param aggregator_type: possible are: {`no_communication`, `centralized`, `clustered`, `decentralized`}
     :param clients:
     :param global_learner:
     :param sampling_rate:
     :param log_freq:
-    :param global_train_logger:
-    :param global_test_logger:
-    :param test_clients
+    :param global_logger:
     :param verbose: level of verbosity
     :param seed: default is None
     :return:
@@ -152,9 +173,7 @@ def get_aggregator(
             clients=clients,
             global_learner=global_learner,
             log_freq=log_freq,
-            global_train_logger=global_train_logger,
-            global_test_logger=global_test_logger,
-            test_clients=test_clients,
+            global_logger=global_logger,
             sampling_rate=sampling_rate,
             verbose=verbose,
             seed=seed
@@ -164,9 +183,7 @@ def get_aggregator(
             clients=clients,
             global_learner=global_learner,
             log_freq=log_freq,
-            global_train_logger=global_train_logger,
-            global_test_logger=global_test_logger,
-            test_clients=test_clients,
+            global_logger=global_logger,
             sampling_rate=sampling_rate,
             verbose=verbose,
             seed=seed
@@ -177,9 +194,7 @@ def get_aggregator(
             clients=clients,
             global_learner=global_learner,
             log_freq=log_freq,
-            test_clients=test_clients,
-            global_train_logger=global_train_logger,
-            global_test_logger=global_test_logger,
+            global_logger=global_logger,
             sampling_rate=sampling_rate,
             verbose=verbose,
             seed=seed
@@ -194,9 +209,7 @@ def get_aggregator(
             global_learner=global_learner,
             mixing_matrix=mixing_matrix,
             log_freq=log_freq,
-            test_clients=test_clients,
-            global_train_logger=global_train_logger,
-            global_test_logger=global_test_logger,
+            global_logger=global_logger,
             sampling_rate=sampling_rate,
             verbose=verbose,
             seed=seed

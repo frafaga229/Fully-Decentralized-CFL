@@ -54,7 +54,7 @@ class Aggregator(ABC):
 
     verbose: level of verbosity, `0` to quiet, `1` to show global logs and `2` to show local logs; default is `0`
 
-    global_train_logger:
+    global_logger:
 
     global_test_logger:
 
@@ -82,8 +82,7 @@ class Aggregator(ABC):
             clients,
             global_learner,
             log_freq,
-            global_train_logger,
-            global_test_logger,
+            global_logger,
             sampling_rate=1.,
             sample_with_replacement=False,
             verbose=0,
@@ -103,8 +102,7 @@ class Aggregator(ABC):
 
         self.log_freq = log_freq
         self.verbose = verbose
-        self.global_train_logger = global_train_logger
-        self.global_test_logger = global_test_logger
+        self.global_logger = global_logger
 
         self.model_dim = self.global_learner.model_dim
 
@@ -137,7 +135,7 @@ class Aggregator(ABC):
 
     def write_logs(self):
         for global_logger, clients in [
-            (self.global_train_logger, self.clients)
+            (self.global_logger, self.clients)
         ]:
             if len(clients) == 0:
                 continue
@@ -152,22 +150,19 @@ class Aggregator(ABC):
 
             for client_id, client in enumerate(clients):
 
-                train_loss, train_acc, test_loss, test_acc = client.write_logs()
+                train_loss, train_metric, val_loss, val_metric, test_loss, test_metric = client.write_logs()
 
                 if self.verbose > 1:
                     print("*" * 30)
                     print(f"Client {client_id}..")
 
-                    with np.printoptions(precision=3, suppress=True):
-                        print("Pi: ", client.learners_weights.numpy())
-
-                    print(f"Train Loss: {train_loss:.3f} | Train Acc: {train_acc * 100:.3f}%|", end="")
-                    print(f"Test Loss: {test_loss:.3f} | Test Acc: {test_acc * 100:.3f}% |")
+                    print(f"Train Loss: {train_loss:.3f} |", end="")
+                    print(f"Test Loss: {test_loss:.3f}")
 
                 global_train_loss += train_loss * client.n_train_samples
-                global_train_acc += train_acc * client.n_train_samples
+                global_train_acc += train_metric * client.n_train_samples
                 global_test_loss += test_loss * client.n_test_samples
-                global_test_acc += test_acc * client.n_test_samples
+                global_test_acc += test_metric * client.n_test_samples
 
                 total_n_samples += client.n_train_samples
                 total_n_test_samples += client.n_test_samples
@@ -180,8 +175,8 @@ class Aggregator(ABC):
             if self.verbose > 0:
                 print("+" * 30)
                 print("Global..")
-                print(f"Train Loss: {global_train_loss:.3f} | Train Acc: {global_train_acc * 100:.3f}% |", end="")
-                print(f"Test Loss: {global_test_loss:.3f} | Test Acc: {global_test_acc * 100:.3f}% |")
+                print(f"Train Loss: {global_train_loss:.3f} |", end="")
+                print(f"Test Loss: {global_test_loss:.3f}")
                 print("+" * 50)
 
             global_logger.add_scalar("Train/Loss", global_train_loss, self.c_round)
@@ -290,8 +285,7 @@ class ClusteredAggregator(Aggregator):
             clients,
             global_learner,
             log_freq,
-            global_train_logger,
-            global_test_logger,
+            global_logger,
             sampling_rate=1.,
             sample_with_replacement=False,
             test_clients=None,
@@ -305,13 +299,12 @@ class ClusteredAggregator(Aggregator):
             clients=clients,
             global_learner=global_learner,
             log_freq=log_freq,
-            global_train_logger=global_train_logger,
-            global_test_logger=global_test_logger,
+            global_logger=global_logger,
             sampling_rate=sampling_rate,
             sample_with_replacement=sample_with_replacement,
-            test_clients=test_clients,
             verbose=verbose,
-            seed=seed
+            seed=seed,
+            test_clients=test_clients
         )
 
         assert self.n_learners == 1, "ClusteredAggregator only supports single learner clients."
@@ -396,8 +389,7 @@ class DecentralizedAggregator(Aggregator):
             global_learner,
             mixing_matrix,
             log_freq,
-            global_train_logger,
-            global_test_logger,
+            global_logger,
             sampling_rate=1.,
             sample_with_replacement=True,
             test_clients=None,
@@ -408,13 +400,12 @@ class DecentralizedAggregator(Aggregator):
             clients=clients,
             global_learner=global_learner,
             log_freq=log_freq,
-            global_train_logger=global_train_logger,
-            global_test_logger=global_test_logger,
+            global_logger=global_logger,
             sampling_rate=sampling_rate,
             sample_with_replacement=sample_with_replacement,
-            test_clients=test_clients,
             verbose=verbose,
-            seed=seed
+            seed=seed,
+            test_clients=test_clients
         )
 
         self.mixing_matrix = mixing_matrix

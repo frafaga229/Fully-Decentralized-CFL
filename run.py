@@ -40,7 +40,6 @@ def init_clients(args_, root_path, logs_root):
                 n_rounds=args_.n_rounds,
                 seed=args_.seed,
                 input_dim=args_.input_dimension,
-                output_dim=args_.output_dimension
             )
 
         logs_path = os.path.join(logs_root, "client_{}".format(client_id))
@@ -54,7 +53,6 @@ def init_clients(args_, root_path, logs_root):
             test_iterator=test_iterator,
             logger=logger,
             local_steps=args_.local_steps,
-            tune_locally=args_.locally_tune_clients
         )
 
         clients_.append(client)
@@ -67,32 +65,21 @@ def run_experiment(args_):
 
     data_dir = get_data_dir(args_.experiment)
 
-    if "logs_root" in args_:
-        logs_root = args_.logs_root
+    if "logs_dir" in args_:
+        logs_dir = args_.logs_dir
     else:
-        logs_root = os.path.join("logs", args_to_string(args_))
+        logs_dir = os.path.join("logs", args_to_string(args_))
 
     print("==> Clients initialization..")
     clients = init_clients(
         args_,
         root_path=data_dir,
-        logs_root=os.path.join(logs_root, "train")
+        logs_root=os.path.join(logs_dir, "train")
     )
 
-    print("==> Test Clients initialization..")
-    test_clients = init_clients(
-        args_,
-        root_path=data_dir,
-        logs_root=os.path.join(logs_root, "test")
-    )
-
-    logs_path = os.path.join(logs_root, "train", "global")
+    logs_path = os.path.join(logs_dir, "global")
     os.makedirs(logs_path, exist_ok=True)
-    global_train_logger = SummaryWriter(logs_path)
-
-    logs_path = os.path.join(logs_root, "test", "global")
-    os.makedirs(logs_path, exist_ok=True)
-    global_test_logger = SummaryWriter(logs_path)
+    global_logger = SummaryWriter(logs_path)
 
     global_learner = \
         get_learner(
@@ -103,26 +90,19 @@ def run_experiment(args_):
             initial_lr=args_.lr,
             n_rounds=args_.n_rounds,
             seed=args_.seed,
-            input_dim=args_.input_dimension,
-            output_dim=args_.output_dimension
-
+            input_dim=args_.input_dimension
         )
 
-    if args_.decentralized:
-        aggregator_type = 'decentralized'
-    else:
-        aggregator_type = AGGREGATOR_TYPE[args_.method]
+    aggregator_type = AGGREGATOR_TYPE[args_.method]
 
-    aggregator =\
+    aggregator = \
         get_aggregator(
             aggregator_type=aggregator_type,
             clients=clients,
             global_learner=global_learner,
             sampling_rate=args_.sampling_rate,
             log_freq=args_.log_freq,
-            global_train_logger=global_train_logger,
-            global_test_logger=global_test_logger,
-            test_clients=test_clients,
+            global_logger=global_logger,
             verbose=args_.verbose,
             seed=args_.seed
         )
@@ -138,11 +118,11 @@ def run_experiment(args_):
             pbar.update(1)
             current_round = aggregator.c_round
 
-    if "save_path" in args_:
-        save_root = os.path.join(args_.save_path)
+    if "save_dir" in args_:
+        save_dir = os.path.join(args_.save_path)
 
-        os.makedirs(save_root, exist_ok=True)
-        aggregator.save_state(save_root)
+        os.makedirs(save_dir, exist_ok=True)
+        aggregator.save_state(save_dir)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,3 @@
-from copy import deepcopy
-
-
 class Client(object):
     def __init__(
             self,
@@ -10,17 +7,10 @@ class Client(object):
             test_iterator,
             logger,
             local_steps,
-            tune_locally=False
     ):
 
         self.learner = learner
         self.n_learners = 1
-        self.tune_locally = tune_locally
-
-        if self.tune_locally:
-            self.tuned_learner = deepcopy(self.learner)
-        else:
-            self.tuned_learner = None
 
         self.binary_classification_flag = self.learner.is_binary_classification
 
@@ -74,16 +64,15 @@ class Client(object):
 
     def write_logs(self):
 
-        if self.tune_locally:
-            train_loss, train_acc = self.tuned_learner.evaluate_iterator(self.val_iterator)
-            test_loss, test_acc = self.tuned_learner.evaluate_iterator(self.test_iterator)
-        else:
-            train_loss, train_acc = self.learner.evaluate_iterator(self.val_iterator)
-            test_loss, test_acc = self.learner.evaluate_iterator(self.test_iterator)
+        train_loss, train_metric = self.learner.evaluate_iterator(self.train_iterator)
+        val_loss, val_metric = self.learner.evaluate_iterator(self.val_iterator)
+        test_loss, test_metric = self.learner.evaluate_iterator(self.test_iterator)
 
         self.logger.add_scalar("Train/Loss", train_loss, self.counter)
-        self.logger.add_scalar("Train/Metric", train_acc, self.counter)
+        self.logger.add_scalar("Train/Metric", train_metric, self.counter)
+        self.logger.add_scalar("Val/Loss", val_loss, self.counter)
+        self.logger.add_scalar("Val/Metric", val_metric, self.counter)
         self.logger.add_scalar("Test/Loss", test_loss, self.counter)
-        self.logger.add_scalar("Test/Metric", test_acc, self.counter)
+        self.logger.add_scalar("Test/Metric", test_metric, self.counter)
 
-        return train_loss, train_acc, test_loss, test_acc
+        return train_loss, train_metric, val_loss, val_metric, test_loss, test_metric

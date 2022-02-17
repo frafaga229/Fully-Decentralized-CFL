@@ -54,7 +54,7 @@ class Learner:
             device,
             optimizer,
             lr_scheduler=None,
-            is_binary_classification=False
+            cast_label=False
     ):
 
         self.model = model.to(device)
@@ -63,7 +63,7 @@ class Learner:
         self.device = device
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.is_binary_classification = is_binary_classification
+        self.is_binary_classification = cast_label
 
         self.model_dim = int(self.get_param_tensor().shape[0])
 
