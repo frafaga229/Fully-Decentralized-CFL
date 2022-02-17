@@ -3,6 +3,8 @@ import pickle
 import numpy as np
 from tqdm import tqdm
 
+import numpy.linalg as LA
+
 
 BOX = (-1.0, 1.0)
 
@@ -60,7 +62,7 @@ class SyntheticDataGenerator:
 
     def generate_cluster_data(self, cluster_id, n_samples):
         x = self.rng.uniform(BOX[0], BOX[1], size=(n_samples, self.dim))
-        y = x @ self.clusters_models[cluster_id]
+        y = x @ (self.clusters_models[cluster_id] / LA.norm(self.clusters_models[cluster_id]))
         y += self.rng.normal(scale=self.noise_level, size=y.shape)
 
         return x.tolist(), y.tolist()
