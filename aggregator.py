@@ -105,7 +105,6 @@ class Aggregator(ABC):
         self.model_dim = self.global_learner.model_dim
 
         self.n_clients = len(clients)
-        self.n_learners = 1
 
         self.clients_weights = \
             torch.tensor(
@@ -121,7 +120,6 @@ class Aggregator(ABC):
         self.sampled_clients = list()
 
         self.c_round = 0
-        self.write_logs()
 
     @abstractmethod
     def mix(self):

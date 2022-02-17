@@ -61,7 +61,7 @@ def init_clients(args_, root_path, logs_root):
     return clients_
 
 
-def run_experiment(args_):
+def build_aggregator(args_):
     torch.manual_seed(args_.seed)
 
     data_dir = get_data_dir(args_.experiment)
@@ -96,7 +96,7 @@ def run_experiment(args_):
 
     aggregator_type = AGGREGATOR_TYPE[args_.method]
 
-    aggregator = \
+    aggregator_ = \
         get_aggregator(
             aggregator_type=aggregator_type,
             clients=clients,
@@ -108,22 +108,7 @@ def run_experiment(args_):
             seed=args_.seed
         )
 
-    print("Training..")
-    pbar = tqdm(total=args_.n_rounds)
-    current_round = 0
-    while current_round <= args_.n_rounds:
-
-        aggregator.mix()
-
-        if aggregator.c_round != current_round:
-            pbar.update(1)
-            current_round = aggregator.c_round
-
-    if "save_dir" in args_:
-        save_dir = os.path.join(args_.save_path)
-
-        os.makedirs(save_dir, exist_ok=True)
-        aggregator.save_state(save_dir)
+    return aggregator_
 
 
 if __name__ == "__main__":
@@ -131,4 +116,24 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = False
 
     args = parse_args()
-    run_experiment(args)
+
+    aggregator = build_aggregator(args)
+
+    aggregator.write_logs()
+
+    print("Training..")
+    pbar = tqdm(total=args.n_rounds)
+    current_round = 0
+    while current_round <= args.n_rounds:
+
+        aggregator.mix()
+
+        if aggregator.c_round != current_round:
+            pbar.update(1)
+            current_round = aggregator.c_round
+
+    if "save_dir" in args:
+        save_dir = os.path.join(args.save_path)
+
+        os.makedirs(save_dir, exist_ok=True)
+        aggregator.save_state(save_dir)
