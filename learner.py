@@ -1,4 +1,5 @@
 import torch
+from copy import deepcopy
 
 
 class Learner:
@@ -272,11 +273,17 @@ class Learner:
             None
 
         """
+        initial_model = deepcopy(self.get_param_tensor())
+
         for step in range(n_epochs):
             self.fit_epoch(iterator, weights)
 
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
+
+        final_model = deepcopy(self.get_param_tensor())
+
+        return final_model - initial_model
 
     def get_param_tensor(self):
         """

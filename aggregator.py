@@ -56,8 +56,6 @@ class Aggregator(ABC):
 
     global_logger:
 
-    global_test_logger:
-
     rng: random number generator
 
     np_rng: numpy random number generator
@@ -288,7 +286,6 @@ class ClusteredAggregator(Aggregator):
             global_logger,
             sampling_rate=1.,
             sample_with_replacement=False,
-            test_clients=None,
             verbose=0,
             tol_1=0.4,
             tol_2=1.6,
@@ -303,11 +300,9 @@ class ClusteredAggregator(Aggregator):
             sampling_rate=sampling_rate,
             sample_with_replacement=sample_with_replacement,
             verbose=verbose,
-            seed=seed,
-            test_clients=test_clients
+            seed=seed
         )
 
-        assert self.n_learners == 1, "ClusteredAggregator only supports single learner clients."
         assert self.sampling_rate == 1.0, f"`sampling_rate` is {sampling_rate}, should be {1.0}," \
                                           f" ClusteredAggregator only supports full clients participation."
 
@@ -319,17 +314,12 @@ class ClusteredAggregator(Aggregator):
         self.n_clusters = 1
 
     def mix(self):
-        clients_updates = np.zeros((self.n_clients, self.n_learners, self.model_dim))
+        clients_updates = np.zeros((self.n_clients, self.model_dim))
 
         for client_id, client in enumerate(self.clients):
             clients_updates[client_id] = client.step()
 
-        similarities = np.zeros((self.n_learners, self.n_clients, self.n_clients))
-
-        for learner_id in range(self.n_learners):
-            similarities[learner_id] = pairwise_distances(clients_updates[:, learner_id, :], metric="cosine")
-
-        similarities = similarities.mean(axis=0)
+        similarities = pairwise_distances(clients_updates, metric="cosine")
 
         new_cluster_indices = []
         for indices in self.clusters_indices:
@@ -372,14 +362,10 @@ class ClusteredAggregator(Aggregator):
             cluster_learners = self.global_learners[cluster_id]
 
             for i in indices:
-                for learner_id, learner in enumerate(self.clients[i].learner):
-                    copy_model(
-                        target=learner.model,
-                        source=cluster_learners[learner_id].model
-                    )
-
-    def update_test_clients(self):
-        pass
+                copy_model(
+                    target=self.clients[i].learner.model,
+                    source=cluster_learners.model
+                )
 
 
 class DecentralizedAggregator(Aggregator):
@@ -392,7 +378,6 @@ class DecentralizedAggregator(Aggregator):
             global_logger,
             sampling_rate=1.,
             sample_with_replacement=True,
-            test_clients=None,
             verbose=0,
             seed=None):
 
@@ -404,8 +389,7 @@ class DecentralizedAggregator(Aggregator):
             sampling_rate=sampling_rate,
             sample_with_replacement=sample_with_replacement,
             verbose=verbose,
-            seed=seed,
-            test_clients=test_clients
+            seed=seed
         )
 
         self.mixing_matrix = mixing_matrix

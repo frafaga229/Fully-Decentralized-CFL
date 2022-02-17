@@ -190,15 +190,8 @@ def get_aggregator(
         )
 
     elif aggregator_type == "clustered":
-        return ClusteredAggregator(
-            clients=clients,
-            global_learner=global_learner,
-            log_freq=log_freq,
-            global_logger=global_logger,
-            sampling_rate=sampling_rate,
-            verbose=verbose,
-            seed=seed
-        )
+        return ClusteredAggregator(clients=clients, global_learner=global_learner, log_freq=log_freq,
+                                   global_logger=global_logger, sampling_rate=sampling_rate, verbose=verbose, seed=seed)
 
     elif aggregator_type == "decentralized":
         n_clients = len(clients)
