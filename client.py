@@ -7,7 +7,10 @@ class Client(object):
             test_iterator,
             logger,
             local_steps,
+            id_=-1
     ):
+
+        self.id = id_
 
         self.learner = learner
         self.n_learners = 1

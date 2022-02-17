@@ -53,6 +53,7 @@ def init_clients(args_, root_path, logs_root):
             test_iterator=test_iterator,
             logger=logger,
             local_steps=args_.local_steps,
+            id_=client_id
         )
 
         clients_.append(client)
