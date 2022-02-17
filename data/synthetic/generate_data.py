@@ -8,6 +8,7 @@ from utils import SyntheticDataGenerator, iid_divide, save_data
 BOX = (-1.0, 1.0)
 
 PATH = "all_data/"
+METADATA_PATH = "meta.pkl"
 GRAPH_PATH = "graph.json"
 
 
@@ -103,22 +104,18 @@ if __name__ == "__main__":
         )
 
     print("\n==> Save metadata..")
-    data_generator.save_metadata(os.path.join(PATH, "meta.pkl"))
+    data_generator.save_metadata(METADATA_PATH)
 
     clients_per_cluster = iid_divide(list(range(args.n_clients)), args.n_clusters)
     n_clients_per_cluster = [len(l) for l in clients_per_cluster]
 
     prob_matrix = np.ones((args.n_clusters, args.n_clusters)) - np.eye(args.n_clusters)
     prob_matrix *= (args.graph_hetero_level / (args.n_clusters - 1))
-    prob_matrix += np.diag((1-args.graph_hetero_level)*np.ones(args.n_clusters))
+    prob_matrix += np.diag((1-args.graph_hetero_level) * np.ones(args.n_clusters))
 
-    # TODO
-    # print("\n==>Save graph..")
-    # graph = nx.stochastic_block_model(n_clients_per_clusters, prob_matrix, seed=args.seed)
-    # json_graph = nx.readwrite.json_graph.node_link_data(graph)
-
-    # with open(GRAPH_PATH, "w") as f:
-    #    json.dump(json_graph, f)
+    print("\n==>Save graph..")
+    graph = nx.stochastic_block_model(n_clients_per_cluster, prob_matrix, seed=args.seed)
+    nx.write_gml(graph, GRAPH_PATH, stringizer=str)
 
     print("\n==> Save data..")
 
