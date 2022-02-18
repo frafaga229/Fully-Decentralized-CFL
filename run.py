@@ -75,7 +75,7 @@ def build_aggregator(args_):
     clients = init_clients(
         args_,
         root_path=data_dir,
-        logs_root=os.path.join(logs_dir, "train")
+        logs_root=logs_dir
     )
 
     logs_path = os.path.join(logs_dir, "global")
