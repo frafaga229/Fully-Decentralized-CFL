@@ -2,6 +2,7 @@ import os
 import matplotlib.pyplot as plt
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
+
 TAGS = [
     "Train/Loss",
     "Train/Metric",
@@ -26,36 +27,22 @@ LEGEND = {
     "local": "Local",
     "clustered": "Clustered FL",
     "FedAvg": "FedAvg",
-    "FedEM": "FedEM (Ours)",
-    "FedAvg_adapt": "FedAvg+",
-    "personalized": "pFedMe",
-    "FedProx": "FedProx"
 }
 
 MARKERS = {
     "local": "x",
     "clustered": "s",
     "FedAvg": "h",
-    "FedEM": "d",
-    "FedAvg_adapt": "4",
-    "personalized": "X",
-    "DEM": "|",
-    "FedProx": "p"
 }
 
 COLORS = {
     "local": "tab:blue",
     "clustered": "tab:orange",
-    "FedAvg": "tab:green",
-    "FedEM": "tab:red",
-    "FedAvg_adapt": "tab:purple",
-    "personalized": "tab:brown",
-    "DEM": "tab:pink",
-    "FedProx": "tab:cyan"
+    "FedAvg": "tab:green"
 }
 
 
-def make_plot(path_, tag_, save_path):
+def make_plot(logs_dir, tag_, save_path):
     """
     :param path_: path of the logs directory, `path_` should contain sub-directories corresponding to methods
         each sub-directory must contain a single tf events file.
@@ -64,33 +51,32 @@ def make_plot(path_, tag_, save_path):
     """
     fig, ax = plt.subplots(figsize=(24, 20))
 
-    for method in os.listdir(path_):
-        for mode in ["train"]:
+    for method in os.listdir(logs_dir):
 
-            method_path = os.path.join(path_, method, mode)
+        method_path = os.path.join(logs_dir, method)
 
-            for task in os.listdir(method_path):
-                if task == "global":
-                    task_path = os.path.join(method_path, task)
-                    ea = EventAccumulator(task_path).Reload()
+        for task in os.listdir(method_path):
+            if task == "global":
+                task_path = os.path.join(method_path, task)
+                ea = EventAccumulator(task_path).Reload()
 
-                    tag_values = []
-                    steps = []
-                    for event in ea.Scalars(tag_):
-                        tag_values.append(event.value)
-                        steps.append(event.step)
+                tag_values = []
+                steps = []
+                for event in ea.Scalars(tag_):
+                    tag_values.append(event.value)
+                    steps.append(event.step)
 
-                    if method in LEGEND:
-                        ax.plot(
-                            steps,
-                            tag_values,
-                            linewidth=5.0,
-                            marker=MARKERS[method],
-                            markersize=20,
-                            markeredgewidth=5,
-                            label=f"{LEGEND[method]}",
-                            color=COLORS[method]
-                        )
+                if method in LEGEND:
+                    ax.plot(
+                        steps,
+                        tag_values,
+                        linewidth=5.0,
+                        marker=MARKERS[method],
+                        markersize=20,
+                        markeredgewidth=5,
+                        label=f"{LEGEND[method]}",
+                        color=COLORS[method]
+                    )
 
     ax.grid(True, linewidth=2)
 
