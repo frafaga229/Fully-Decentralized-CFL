@@ -151,6 +151,8 @@ def get_aggregator(
         log_freq,
         global_logger,
         verbose,
+        tol_1=None,
+        tol_2=None,
         seed=None
 ):
     """
@@ -160,6 +162,8 @@ def get_aggregator(
     :param clients:
     :param global_learner:
     :param sampling_rate:
+    :param tol_1: only used when aggregator_type is `clustered`; default is None
+    :param tol_2: only used when aggregator_type is `clustered`; default is None
     :param log_freq:
     :param global_logger:
     :param verbose: level of verbosity
@@ -190,8 +194,17 @@ def get_aggregator(
         )
 
     elif aggregator_type == "clustered":
-        return ClusteredAggregator(clients=clients, global_learner=global_learner, log_freq=log_freq,
-                                   global_logger=global_logger, sampling_rate=sampling_rate, verbose=verbose, seed=seed)
+        return ClusteredAggregator(
+            clients=clients,
+            global_learner=global_learner,
+            tol_1=tol_1,
+            tol_2=tol_2,
+            log_freq=log_freq,
+            global_logger=global_logger,
+            sampling_rate=sampling_rate,
+            verbose=verbose,
+            seed=seed
+        )
 
     elif aggregator_type == "decentralized":
         n_clients = len(clients)

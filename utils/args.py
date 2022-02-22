@@ -77,6 +77,18 @@ def parse_args(args_list=None):
         default="constant"
     )
     parser.add_argument(
+        "--tol_1",
+        "tolerance parameter used in clustered FL",
+        type=float,
+        default=0.4
+    )
+    parser.add_argument(
+        "--tol_2",
+        "tolerance parameter used in clustered FL",
+        type=float,
+        default=1.6
+    )
+    parser.add_argument(
         "--verbose",
         help='verbosity level, `0` to quiet, `1` to show global logs and `2` to show local logs; default is `0`;',
         type=int,
