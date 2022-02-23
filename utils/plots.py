@@ -42,18 +42,18 @@ COLORS = {
 }
 
 
-def make_plot(logs_dir, tag_, save_path):
+def make_plot(logs_dir_, tag_, save_path):
     """
-    :param path_: path of the logs directory, `path_` should contain sub-directories corresponding to methods
+    :param logs_dir_: path of the logs directory,  should contain sub-directories corresponding to methods
         each sub-directory must contain a single tf events file.
     :param tag_: the tag to be plotted, possible are "Train/Loss", "Train/Metric", "Test/Loss", "Test/Metric"
     :param save_path: path to save the resulting plot
     """
     fig, ax = plt.subplots(figsize=(24, 20))
 
-    for method in os.listdir(logs_dir):
+    for method in os.listdir(logs_dir_):
 
-        method_path = os.path.join(logs_dir, method)
+        method_path = os.path.join(logs_dir_, method)
 
         for task in os.listdir(method_path):
             if task == "global":

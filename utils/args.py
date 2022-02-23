@@ -78,13 +78,13 @@ def parse_args(args_list=None):
     )
     parser.add_argument(
         "--tol_1",
-        "tolerance parameter used in clustered FL",
+        help="tolerance parameter used in clustered FL",
         type=float,
         default=0.4
     )
     parser.add_argument(
         "--tol_2",
-        "tolerance parameter used in clustered FL",
+        help="tolerance parameter used in clustered FL",
         type=float,
         default=1.6
     )
