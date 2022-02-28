@@ -11,10 +11,10 @@ TAGS = [
 ]
 
 FILES_NAMES = {
-    "Train/Loss": "train-loss.png",
-    "Train/Metric": "train-acc.png",
-    "Test/Loss": "test-loss.png",
-    "Test/Metric": "test-acc.png"}
+    "Train/Loss": "train-loss.pdf",
+    "Train/Metric": "train-acc.pdf",
+    "Test/Loss": "test-loss.pdf",
+    "Test/Metric": "test-acc.pdf"}
 
 AXE_LABELS = {
     "Train/Loss": "Train loss",
