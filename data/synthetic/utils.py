@@ -52,6 +52,7 @@ class SyntheticDataGenerator:
         self.rng = np.random.default_rng(self.seed)
 
         self.base_model = self.rng.normal(size=self.dim)
+        self.base_model = self.base_model / LA.norm(self.base_model)
 
         if self.n_clusters == 2:
             self.clusters_models = np.stack([self.base_model, -self.base_model])
