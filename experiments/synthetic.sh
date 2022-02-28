@@ -5,8 +5,8 @@ cd data/synthetic/ || exit
 
 echo "Generate synthetic data"
 python generate_data.py \
-  --n_clients 300 \
-  --dimension 150 \
+  --n_clients 100 \
+  --dimension 10 \
   --n_clusters 2 \
   --graph_hetero_level 0.2 \
   --data_hetero_level 1.0 \
@@ -22,7 +22,7 @@ echo "Train local model (no communication)"
 python run.py \
   synthetic \
   local \
-  --input_dimension 150 \
+  --input_dimension 10 \
   --n_rounds 200 \
   --bz 256 \
   --local_steps 1 \
@@ -39,7 +39,7 @@ echo "Train global model (FedAvg)"
 python run.py \
   synthetic \
   FedAvg \
-  --input_dimension 150 \
+  --input_dimension 10 \
   --n_rounds 200 \
   --bz 256 \
   --local_steps 1 \
@@ -56,9 +56,9 @@ echo "Train Clustered FL"
 python run.py \
   synthetic \
   clustered \
-  --tol_1 0.4 \
-  --tol_2 1.6 \
-  --input_dimension 150 \
+  --tol_1 0.01 \
+  --tol_2 0.8 \
+  --input_dimension 10 \
   --n_rounds 200 \
   --bz 256 \
   --local_steps 1 \
