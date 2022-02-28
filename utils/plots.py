@@ -49,7 +49,7 @@ def make_plot(logs_dir_, tag_, save_path):
     :param tag_: the tag to be plotted, possible are "Train/Loss", "Train/Metric", "Test/Loss", "Test/Metric"
     :param save_path: path to save the resulting plot
     """
-    fig, ax = plt.subplots(figsize=(24, 20))
+    fig, ax = plt.subplots(figsize=(12, 10))
 
     for method in os.listdir(logs_dir_):
 
