@@ -30,8 +30,8 @@ def get_loaders(root_path, batch_size):
     """
     train_iterators, val_iterators, test_iterators = [], [], []
 
-    for client_id, client_dir in enumerate(tqdm(os.listdir(root_path))):
-        client_data_path = os.path.join(root_path, client_dir)
+    for client_id, _ in enumerate(tqdm(os.listdir(root_path))):
+        client_data_path = os.path.join(root_path, f"client_{client_id}")
 
         train_dataset = TabularDataset(os.path.join(client_data_path, 'train.pkl'))
         train_iterator = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
