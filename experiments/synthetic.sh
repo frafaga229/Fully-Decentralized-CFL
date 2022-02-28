@@ -73,4 +73,4 @@ python run.py \
 
 echo "Make plots"
 python make_plots --logs_dir logs save_dir results
-echo "PLots save to results/"
+echo "Plots save to results/"

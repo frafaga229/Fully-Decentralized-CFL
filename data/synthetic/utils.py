@@ -53,12 +53,15 @@ class SyntheticDataGenerator:
 
         self.base_model = self.rng.normal(size=self.dim)
 
-        self.clusters_models = \
-            self.rng.normal(
-                loc=self.base_model,
-                scale=self.clusters_hetero,
-                size=(self.n_clusters, self.dim)
-            )
+        if self.n_clusters == 2:
+            self.clusters_models = np.stack([self.base_model, -self.base_model])
+        else:
+            self.clusters_models = \
+                self.rng.normal(
+                    loc=self.base_model,
+                    scale=self.clusters_hetero,
+                    size=(self.n_clusters, self.dim)
+                )
 
     def generate_cluster_data(self, cluster_id, n_samples):
         x = self.rng.uniform(BOX[0], BOX[1], size=(n_samples, self.dim))
