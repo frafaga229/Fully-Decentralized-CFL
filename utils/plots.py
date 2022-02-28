@@ -83,8 +83,8 @@ def make_plot(logs_dir_, tag_, save_path):
     ax.set_ylabel(AXE_LABELS[tag_], fontsize=50)
     ax.set_xlabel("Rounds", fontsize=50)
 
-    ax.tick_params(axis='both', labelsize=25)
-    ax.legend(fontsize=30)
+    ax.tick_params(axis='both', labelsize=30)
+    ax.legend(fontsize=40)
 
     os.makedirs(save_path, exist_ok=True)
     fig_path = os.path.join(save_path, f"{FILES_NAMES[tag_]}")
